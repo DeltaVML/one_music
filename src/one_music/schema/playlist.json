@@ -1,0 +1,40 @@
+{
+  "class": "Playlist",
+  "description": "Playlist found on Spotify",
+  "vectorIndexType": "hnsw",
+  "vectorizer": "text2vec-cohere",
+  "properties": [
+    {
+      "name": "spotify_id",
+      "dataType": ["string"],
+      "description": "The unique playlist id from Spotify",
+      "moduleConfig": {
+        "text2vec-cohere": {
+          "skip": true
+        }
+      }
+    },
+    {
+      "name": "name",
+      "dataType": ["text"],
+      "description": "The name of the playlist",
+      "tokenization": "word"
+    },
+    {
+      "name": "description",
+      "dataType": ["text"],
+      "description": "The description of the playlist",
+      "tokenization": "word"
+    },
+    {
+      "name": "contains_songs",
+      "dataType": ["Song"],
+      "description": "The songs this playlist contains"
+    },
+    {
+      "name": "date_added",
+      "dataType": ["date"],
+      "description": "The date of querying this playlist on Spotify"
+    }
+  ]
+}

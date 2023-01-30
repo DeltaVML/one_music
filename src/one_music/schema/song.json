@@ -1,0 +1,43 @@
+{
+  "class": "Song",
+  "description": "Embedding of a song containing lyrics, audio features and metadata",
+  "vectorIndexType": "hnsw",
+  "vectorizer": "text2vec-cohere",
+  "properties": [
+    {
+      "name": "spotify_id",
+      "dataType": ["string"],
+      "description": "The unique song id from Spotify",
+      "moduleConfig": {
+        "text2vec-cohere": {
+          "skip": true
+        }
+      }
+    },
+    {
+      "name": "name",
+      "dataType": ["text"],
+      "description": "The name of the song"
+    },
+    {
+      "name": "artists",
+      "dataType": ["string[]"],
+      "description": "The names of the artists appearing on this song"
+    },
+    {
+      "name": "release_date",
+      "dataType": ["date"],
+      "description": "The release date of the album this song appears on"
+    },
+    {
+      "name": "found_in_playlists",
+      "dataType": ["Playlist"],
+      "description": "The playlists where this song if found"
+    },
+    {
+      "name": "has_lyrics",
+      "dataType": ["Lyrics"],
+      "description": "The lyrics and translations for this song"
+    }
+  ]
+}

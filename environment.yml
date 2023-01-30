@@ -1,0 +1,21 @@
+name: cohere
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - matplotlib
+  - hydra-core
+  - jupyter
+  - plotly
+  - streamlit
+  - pip
+  - pip:
+    - cohere
+    - weaviate-client
+    - spotipy
+    - lyricsgenius
+    - umap-learn
+    - beautifulsoup4

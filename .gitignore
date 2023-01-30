@@ -1,0 +1,8 @@
+*.db
+docker-compose.yml
+*.pptx
+*.ipynb
+src/config/*
+.cache
+.idea/
+*__pycache__/

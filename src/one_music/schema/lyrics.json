@@ -1,0 +1,39 @@
+{
+  "class": "Lyrics",
+  "description": "Lyrics from a song",
+  "vectorIndexType": "hnsw",
+  "vectorizer": "text2vec-cohere",
+  "properties": [
+    {
+      "name": "genius_url",
+      "dataType": ["string"],
+      "description": "The url for the genius webpage where lyrics were found",
+      "moduleConfig": {
+        "text2vec-cohere": {
+          "skip": true
+        }
+      }
+    },
+    {
+      "name": "language",
+      "dataType": ["string"],
+      "description": "The language of the lyrics",
+      "moduleConfig": {
+        "text2vec-cohere": {
+          "skip": true
+        }
+      }
+    },
+    {
+      "name": "lyrics",
+      "dataType": ["text"],
+      "description": "The lyrics from the song",
+      "tokenization": "word"
+    },
+    {
+      "name": "from_song",
+      "dataType": ["Song"],
+      "description": "The song on which the lyric appear"
+    }
+  ]
+}
