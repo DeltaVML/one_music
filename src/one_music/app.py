@@ -1,130 +1,155 @@
 import hydra
+from sqlmodel import Session, select
 
-from .models import Playlist
-from .database import engine
-
-from one_music.registry import (
-    connect_to_db,
-    initialize_registry,
-    create_table_playlists,
-    create_table_songs,
-    create_table_songs_playlist,
-    insert_playlists,
-    insert_songs,
-    insert_artists,
-    insert_lyrics,
-    insert_songs_playlist,
-    insert_songs_artists,
-    insert_weaviate,
-    read_playlists,
-    read_songs,
-    read_lyrics
-)
+from .models import Playlist, Song, Artist, Lyrics, SongPlaylistLink, SongArtistLink
+from .database import engine, create_db_and_tables
 
 
 def poll_spotify(cfg) -> None:
-    from one_music.spotify import (
+    from .spotify import (
         create_authenticator,
         create_client,
         get_user_playlists,
-        filter_playlists,
         get_playlist_songs
     )
-
-    conn = connect_to_db(cfg.registry.connection_string)
 
     spotify_authenticator = create_authenticator(cfg.spotify.client_id, cfg.spotify.client_secret)
     spotify_client = create_client(auth_manager=spotify_authenticator)
 
     spotify_playlists = get_user_playlists(client=spotify_client, user_id="spotify")
-    top_50_playlists = filter_playlists(
-        playlists=spotify_playlists,
-        filter_func=lambda p: "Top 50" in p["name"],
-        fields=["id", "name", "description"]
-    )
+    filter_func = lambda p: "Top 50 -" in p["name"]
 
     # TODO optimization: multiprocessing, async API calls, batch SQL inserts
-    for playlist in top_50_playlists:
-        insert_playlists(conn, spotify_id=playlist["id"], name=playlist["name"], description=playlist["description"])
+    with Session(engine) as session:
+        for playlist in filter(filter_func, spotify_playlists):
+            playlist_sql = Playlist(
+                spotify_id=playlist["id"],
+                name=playlist["name"],
+                description=playlist["description"],
+            )
+            session.add(playlist_sql)
 
-        songs = get_playlist_songs(client=spotify_client, playlist_id=playlist["id"])
-        for song in songs:
-            insert_songs(conn,
-                         spotify_id=song["id"],
-                         name=song["name"],
-                         release_date=song["release_date"]
-                         )
-            insert_songs_playlist(conn,
-                                  song_spotify_id=song["id"],
-                                  playlist_spotify_id=playlist["id"]
-                                  )
+            songs = get_playlist_songs(client=spotify_client, playlist_id=playlist["id"])
+            if songs is None:
+                continue
 
-            for artist in song["artists"]:
-                insert_artists(conn,
-                              spotify_id=artist["id"],
-                              name=artist["name"]
-                              )
-                insert_songs_artists(conn,
-                                     song_spotify_id=song["id"],
-                                     artist_spotify_id=artist["id"]
-                                     )
+            for song in songs:
+                song_sql = Song(
+                    spotify_id=song["id"],
+                    name=song["name"],
+                    playlist=[playlist_sql]
+                )
+                songplaylistlink_sql = SongPlaylistLink(song=song_sql, playlist=playlist_sql)
+                session.add(song_sql)
+                session.add(songplaylistlink_sql)
+
+                for artist in song["artists"]:
+                    artist_sql = Artist(
+                        spotify_id=artist["id"],
+                        name=artist["name"],
+                        songs=[song_sql]
+                    )
+                    songartistlink_sql = SongArtistLink(song=song_sql, artist=artist_sql)
+                    session.add(artist_sql)
+                    session.add(songartistlink_sql)
+
+            session.commit()
+
+        session.commit()
 
 
-def poll_genius(cfg) -> None:
+def poll_genius(cfg, start) -> None:
     import time
+    import random
+
     import cohere
-    from one_music.genius import (
+    from .genius import (
         create_client,
         search_song,
-        get_song_lyrics,
         crawl_for_translations,
         detect_lyrics_language,
+        get_song_lyrics,
+        save_lyrics_to_file
     )
 
-    conn = connect_to_db(cfg.registry.connection_string)
-
     cohere_client = cohere.Client(cfg.cohere.client_token)
-
     genius_client = create_client(cfg.genius.client_token)
-    genius_client.remove_section_headers = True
 
-    songs = read_songs(conn)
+    with Session(engine) as session:
+        query = select(SongArtistLink).join(Song).join(Artist).where(Song.id > start)
+        results = session.exec(query)
+
+        keys = set()
+        unique_songs = []
+        for r in results:
+            if r.song.spotify_id in keys:
+                continue
+            else:
+                keys.add(r.song.spotify_id)
+                unique_songs.append(
+                    dict(
+                        song_id=r.song.id,
+                        song_spotify_id=r.song.spotify_id,
+                        song_name=r.song.name,
+                        artist_name=r.artist.name,
+                    )
+                )
+
     # TODO leverage multiprocessing and async API calls
-    for song in songs:
-        song_spotify_id = song[0]
-        song_name = song[2]
+    # for r in results:
+    for s in unique_songs:
+        # NOTE Genius could return translations as primary result
+        # song_genius = search_song(client=genius_client, song_name=r.song.name, artist_name=r.artist.name)
+        song_genius = search_song(client=genius_client, song_name=s["song_name"], artist_name=s["artist_name"])
 
-        song_genius = search_song(client=genius_client, song_name=song_name)  #, artist_name=artist_name)
-        # lyrics = get_song_lyrics(client=genius_client, song_url=song_genius.url)
-        # language = detect_lyrics_language(cohere_client, song_genius)  # could be removed
+        if song_genius:
+            if song_genius.lyrics:
 
-        insert_lyrics(conn,
-                      genius_url=song_genius.url,
-                      song_spotify_id=song_spotify_id,
-                      language=detect_lyrics_language(cohere_client, song_genius),
-                      lyrics=get_song_lyrics(client=genius_client, song_url=song_genius.url)
-                      )
+                lyrics_snippet = song_genius.lyrics[300:500]
+                language = detect_lyrics_language(cohere_client, lyrics_snippet)
 
-        for url, language in crawl_for_translations(song_genius.url):
-            if url is None:
-                break
+                file_name = f'{s["song_id"]}_{language}.txt'
+                save_lyrics_to_file(lyrics=song_genius.lyrics, file_name=file_name, save_dir=cfg.genius.save_dir)
 
-            insert_lyrics(conn,
-                          genius_url=url,
-                          song_spotify_id=song_spotify_id,
-                          language=language,
-                          lyrics=get_song_lyrics(client=genius_client, song_url=url)
-                          )
+                main_lyrics_sql = Lyrics(
+                    genius_url=song_genius.url,
+                    song_id=s["song_id"],
+                    language=language,
+                    is_downloaded=True
+                )
+                session.add(main_lyrics_sql)
 
-            time.sleep(0.6)
+            for translation_url, language in crawl_for_translations(song_genius.url):
+                if translation_url is None:
+                    break
 
-        time.sleep(0.6)
+                translation_lyrics = get_song_lyrics(client=genius_client, song_url=translation_url)
+                if translation_lyrics:
+                    translation_lyrics_snippet = translation_lyrics[300:500]
+                    translation_language = detect_lyrics_language(cohere_client, translation_lyrics_snippet)
+
+                    file_name = f'{s["song_id"]}_{translation_language}.txt'
+                    save_lyrics_to_file(translation_lyrics, file_name=file_name, save_dir=cfg.genius.save_dir)
+
+                    translation_lyrics_sql = Lyrics(
+                        genius_url=translation_url,
+                        song_id=s["song_id"],
+                        language=translation_language,  # cohere enforces coherent formatting vs. scraper
+                        is_downloaded=True
+                    )
+                    session.add(translation_lyrics_sql)
+
+                time.sleep(60 + random.randint(0, 120))  # sleep for cohere API calls
+
+        session.commit()
+
+    time.sleep(60 + random.randint(0, 120))  # sleep for cohere API calls
 
 
 def push_to_weaviate(cfg):
     import time
     from pathlib import Path
-    from one_music.weaviate import (
+    from .weaviate import (
         create_client,
         load_schemas_from_dir,
         push_schemas,
@@ -132,22 +157,24 @@ def push_to_weaviate(cfg):
         purge_storage
     )
 
-    conn = connect_to_db(cfg.registry.connection_string)
+    def _load_lyrics_file(file_path):
+        with open(file_path, mode="r", encoding="utf-8") as f:
+            return f.read()
+
+    def strip_headers():
+        NotImplementedError
 
     weaviate_client = create_client(cfg.weaviate.connection_url)
 
     purge_storage(weaviate_client)
 
-    schema_dir = Path(__file__).with_name("schema")
-    schemas = load_schemas_from_dir(schema_dir)
+    base_dir = Path(__file__).parent
+    schemas = load_schemas_from_dir(base_dir.joinpath("schema"))
     push_schemas(weaviate_client, schemas)
 
-    weaviate_client.batch.configure(
-        batch_size=10,
-        dynamic=True
-    )
+    weaviate_client.batch.configure(batch_size=100)
 
-    with weaviate_client.batch as batch:
+    count = 0
         # SECTION 1: add objects
         # for playlist in read_playlists(conn):
         #     uuid = add_object_to_batch(batch,
@@ -177,31 +204,57 @@ def push_to_weaviate(cfg):
         #                     key_value=song["spotify_id"]
         #                     )
 
-        for lyrics in read_lyrics(conn):
-            uuid = add_object_to_batch(batch,
-                                       class_name="Lyrics",
-                                       data_object={k:v for k, v in lyrics.items() if k in ["genius_url", "language", "lyrics"]}
-                                       )
-            time.sleep(0.6)
+    with Session(engine) as session:
+        query = select(Lyrics)
+        results = session.exec(query)
 
-            insert_weaviate(conn,
-                            uuid=str(uuid),
-                            class_name="Lyrics",
-                            primary_key="genius_url",
-                            key_value=lyrics["genius_url"]
-                            )
+        for r in results:
+            file_name = f"{r.song_id}_{r.language}.txt"
+
+            try:
+                lyrics_txt = _load_lyrics_file(base_dir.parent.joinpath("data", file_name))
+            except FileNotFoundError:
+                continue
+
+            uuid = add_object_to_batch(weaviate_client.batch,
+                                       class_name="Lyrics",
+                                       data_object=dict(genius_url=r.genius_url, language=r.language, lyrics=lyrics_txt)
+                                       )
+
+            count += 1
+            if count % 100 == 0:
+                weaviate_client.batch.flush()
+                time.sleep(62)
 
         # SECTION 2: add references
 
 
 @hydra.main(config_name="app.yaml", config_path="../config", version_base="1.2")
 def main(cfg) -> None:
-    conn = connect_to_db(cfg.registry.connection_string)
-    initialize_registry(conn)
+    import time
+    from pathlib import Path
 
+    def _find_start():
+        data_dir = Path("C:/.coding/cohere_hackaton/src/data")
+        start = 0
+        for f in data_dir.iterdir():
+            song_id = int(f.name.split("_")[0])
+            if start < song_id:
+                start = song_id
+
+        return start
+
+    waits = [600, 1800, 1800, 3600, 1800, 600, 1800, 3600, 1800, 2700]
+    for w in waits:
+        try:
+            poll_genius(cfg, start=_find_start())
+        except:
+            time.sleep(w)
+
+    # create_db_and_tables()
     # poll_spotify(cfg)
     # poll_genius(cfg)
-    push_to_weaviate(cfg)
+    # push_to_weaviate(cfg)
 
 
 if __name__ == "__main__":

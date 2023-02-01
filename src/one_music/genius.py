@@ -19,9 +19,8 @@ def get_song_lyrics(client: Genius, song_url: str):
     return client.lyrics(song_url=song_url, remove_section_headers=False)  # TODO parse headers before embedding
 
 
-def detect_lyrics_language(cohere_client: cohere.Client, song: Song, snippet_length: int = 50) -> str:
-    snippet = song.lyrics[200:200+snippet_length]
-    response = cohere_client.detect_language(texts=[snippet])
+def detect_lyrics_language(cohere_client: cohere.Client, lyrics_snippet) -> str:
+    response = cohere_client.detect_language(texts=[lyrics_snippet])
     language = response.results[0].language_name
 
     return language
@@ -31,7 +30,7 @@ def crawl_for_translations(genius_url):
     r = requests.get(genius_url, timeout=5)
 
     if r.status_code != requests.codes.ok:
-        raise Error
+        raise TimeoutError
 
     soup = BeautifulSoup(r.text, features="html.parser")
 
@@ -46,3 +45,8 @@ def crawl_for_translations(genius_url):
                 yield item.a.get("href"), item.a.div.text  # (link, language)
 
     yield None, None
+
+
+def save_lyrics_to_file(lyrics: str, file_name: str, save_dir: str) -> None:
+    with open(f"{save_dir}/{file_name}", encoding="utf-8", mode="w") as f:
+        f.write(lyrics)

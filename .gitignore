@@ -6,3 +6,5 @@ src/config/*
 .cache
 .idea/
 *__pycache__/
+*outputs/
+*data/

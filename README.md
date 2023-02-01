@@ -1,16 +1,13 @@
 # TODO
-- create data model for playlists
-- create data model for songs
-- create diagram for data model
-- create registry for downloaded files
-- select non-romanized version on Genius
 - understand how Spotify selects Top 50
 - summarize Spotify's article
+- filter unique song results
+- request error
 
 # Product vision and features
 - a web app
 - cluster songs by text content across languages
--
+- an artist might want to create songs that provide coverage over the semantic space
 
 # Notes
 - remove section headers for generative step
@@ -33,10 +30,3 @@
 - Hypermodern Python projects: https://medium.com/@cjolowicz/hypermodern-python-d44485d9d769
 - Spotipy urllib3 manual fix
 - Lyricsgenius fix: https://github.com/johnwmillr/LyricsGenius/pull/215/commits/62e14d53d2978e76396556c61988986120e15022
-
-
-//    {
-//      "name": "is_original_language",
-//      "dataType": ["boolean"],
-//      "description": "True if this is the original language; false if this is a translation"
-//    },

@@ -1,5 +1,3 @@
-from typing import Callable
-
 from spotipy.client import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -29,13 +27,6 @@ def get_user_playlists(client: Spotify, user_id: str):
             response = None
 
 
-def filter_playlists(playlists: list[dict],  filter_func: Callable, fields: list[str]):
-    """Select playlists based on filter; then reduce objects to selected keys"""
-    for playlist in playlists:
-        if filter(filter_func, playlist):
-            yield {k: v for k, v in playlist.items() if k in fields}
-
-
 def get_playlist_songs(client: Spotify, playlist_id: str, fields: str = "items(track(id, name, album(release_date), artists(id, name)))"):
     response = client.playlist_items(playlist_id, fields=fields)
 
@@ -43,7 +34,7 @@ def get_playlist_songs(client: Spotify, playlist_id: str, fields: str = "items(t
         song_obj = dict(
             id=song["track"]["id"],
             name=song["track"]["name"],
-            release_date=song["track"]["album"]["release_date"],
+            release_date=song["track"]["album"]["release_date"],  # TODO include audio features in datamodel
             artists=song["track"]["artists"]
         )
 
