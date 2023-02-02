@@ -25,19 +25,19 @@
       "description": "The names of the artists appearing on this song"
     },
     {
-      "name": "release_date",
-      "dataType": ["date"],
-      "description": "The release date of the album this song appears on"
-    },
-    {
-      "name": "found_in_playlists",
+      "name": "from_playlist",
       "dataType": ["Playlist"],
-      "description": "The playlists where this song if found"
+      "description": "The playlists where this song if from"
     },
     {
       "name": "has_lyrics",
       "dataType": ["Lyrics"],
       "description": "The lyrics and translations for this song"
+    },
+    {
+      "name": "has_audio_features",
+      "dataType": ["AudioFeatures"],
+      "description": "The song's audio features from Spotify"
     }
   ]
 }

@@ -33,7 +33,7 @@
     {
       "name": "from_song",
       "dataType": ["Song"],
-      "description": "The song on which the lyric appear"
+      "description": "The song on which the lyrics appear"
     }
   ]
 }

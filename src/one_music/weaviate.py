@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 from weaviate.client import Client
-from weaviate.batch import Batch
+from weaviate.util import generate_uuid5
 
 
 class Schema(BaseModel):
@@ -16,14 +16,21 @@ class Schema(BaseModel):
     moduleConfig: Optional[dict]
 
 
-def create_client(url: str = "http://localhost:8080") -> Client:
-    """Create a weaviate.yaml client using SDK"""
-    client = Client(url)   # TODO config DB
+def create_weaviate_client(url: str, headers: dict = None) -> Client:
+    """Create a weaviate client using SDK"""
+    headers = {} if headers is None else headers
+    client = Client(url, additional_headers=headers)   # TODO config DB
     if client.is_live() and client.is_ready():
         return client
     else:
         print("Error creating client")  # TODO implement exception
         raise Exception
+
+
+def initialize_weaviate(client: Client, schema_dir: str) -> None:
+    if client.schema.contains() is False:
+        schemas = load_schemas_from_dir(schema_dir)
+        push_schemas(client, schemas)
 
 
 def load_schema_file(file_path: str | Path) -> Schema:
@@ -63,9 +70,60 @@ def purge_storage(client: Client):
     client.schema.delete_all()
 
 
-def add_object_to_batch(batch: Batch, class_name: str, data_object: dict):
-    uuid = batch.add_data_object(
-        class_name=class_name,
-        data_object=data_object
+from weaviate import Client
+import time
+
+
+def configure_batch(client: Client, batch_size: int, batch_target_rate: float):
+    """
+    func to respect Cohere rate limit; ref: https://weaviate.io/developers/weaviate/modules/retriever-vectorizer-modules/text2vec-cohere#cohere-rate-limits
+    Configure the weaviate client's batch so it creates objects at `batch_target_rate`.
+
+    Parameters
+    ----------
+    client : Client
+        The Weaviate client instance.
+    batch_size : int
+        The batch size.
+    batch_target_rate : int
+        The batch target rate as # of objects per second.
+    """
+
+    def callback(batch_results: dict) -> None:
+        time_took_to_create_batch = batch_size * (client.batch.creation_time/20)
+        time.sleep(
+            round(max(batch_size/batch_target_rate - time_took_to_create_batch + 1, 0))
+        )
+
+    client.batch.configure(
+        batch_size=batch_size,
+        timeout_retries=5,
+        callback=callback,
     )
+
+
+def get_or_add_to_batch(client: Client, data_object: dict, class_name: str, primary_key: str) -> str:
+    query = (
+        client.query.get(class_name=class_name, properties=primary_key)
+                    .with_additional(properties="id")
+                    .with_where(
+                            {"path": [primary_key],
+                             "operator": "Equal",
+                             "valueString": data_object[primary_key],
+                             }
+                        )
+                    .with_limit(1)
+    )
+    result = query.do()
+
+    if not result["data"]["Get"][class_name]:
+        uuid = generate_uuid5(data_object, class_name)
+        client.batch.add_data_object(
+            class_name=class_name,
+            data_object=data_object,
+            uuid=uuid,
+        )
+    else:
+        uuid = result["data"]["Get"][class_name][0]["_additional"]["id"]
+
     return uuid

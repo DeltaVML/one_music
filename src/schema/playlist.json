@@ -27,14 +27,14 @@
       "tokenization": "word"
     },
     {
-      "name": "contains_songs",
-      "dataType": ["Song"],
-      "description": "The songs this playlist contains"
-    },
-    {
-      "name": "date_added",
+      "name": "created_at",
       "dataType": ["date"],
       "description": "The date of querying this playlist on Spotify"
+    },
+    {
+      "name": "has_songs",
+      "dataType": ["Song"],
+      "description": "The songs this playlist contains"
     }
   ]
 }

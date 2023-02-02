@@ -17,5 +17,4 @@ dependencies:
     - weaviate-client
     - spotipy
     - lyricsgenius
-    - umap-learn
     - beautifulsoup4
