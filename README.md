@@ -10,7 +10,7 @@ This project was realized by Thierry Jean in the context of the Cohere hackaton 
  - Optimizing API calls to Spotify, Genius, Cohere and Pinecone with async routines and multiprocessing
  - 
  ### Data Model
- ![Data model](../static/data_model_diagram.png)
+ ![Data model](https://github.com/zilto/one_music/blob/6b7c3afdb03ba075b21b5c1454422d492414afdb/docs/data_model_diagram.png)
  ### Stack
  Key technologies used for this project:
  - [Cohere API](https://docs.cohere.ai/reference/about) via [cohere](https://github.com/cohere-ai/cohere-python)
