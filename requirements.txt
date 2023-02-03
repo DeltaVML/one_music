@@ -1,0 +1,14 @@
+numpy
+pandas
+matplotlib
+hydra-core
+cohere
+pinecone-client
+spotipy
+lyricsgenius
+beautifulsoup4
+requests
+sqlmodel
+umap
+plotly-express
+streamlit
