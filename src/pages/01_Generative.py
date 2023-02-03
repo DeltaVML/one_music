@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 from requests.exceptions import RetryError
 
 import streamlit as st
@@ -124,9 +125,10 @@ def app():
 
     co = create_cohere_client()
 
-    lyrics_df = load_lyrics_table("./data/tables/lyrics_table.parquet")
-    song_df = load_song_table("./data/tables/song_table.parquet", lyrics_df)
-    index_df = load_index_table("./data/tables/index_table.parquet", lyrics_df)
+    base_path = Path(__file__).parent.parent
+    lyrics_df = load_lyrics_table(base_path.join_path("/data/tables/lyrics_table.parquet"))
+    song_df = load_song_table(base_path.join_path("/data/tables/song_table.parquet"), lyrics_df)
+    index_df = load_index_table(base_path.join_path("/data/tables/index_table.parquet"), lyrics_df)
 
     features = RobustScaler().fit_transform(song_df[['valence', 'acousticness', 'danceability', 'duration_ms',
                                                      'energy', 'instrumentalness', 'liveness', 'speechiness', 'tempo']]
