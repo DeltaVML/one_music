@@ -11,4 +11,5 @@ requests
 sqlmodel
 umap
 plotly-express
+scikit-learn
 streamlit
