@@ -8,13 +8,13 @@ dependencies:
   - pandas
   - matplotlib
   - hydra-core
-  - jupyter
-  - plotly
-  - streamlit
   - pip
   - pip:
     - cohere
-    - weaviate-client
+    - pinecone-client
     - spotipy
     - lyricsgenius
     - beautifulsoup4
+    - umap
+    - plotly-express
+    - streamlit
