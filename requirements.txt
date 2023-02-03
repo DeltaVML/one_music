@@ -8,7 +8,7 @@ lyricsgenius
 beautifulsoup4
 requests
 sqlmodel
-umap
+umap-learn
 plotly-express
 scikit-learn
 streamlit
