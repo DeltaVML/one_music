@@ -1,6 +1,5 @@
 numpy
 pandas
-matplotlib
 hydra-core
 cohere
 pinecone-client
