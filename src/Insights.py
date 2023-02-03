@@ -121,7 +121,7 @@ def app():
     base_path = Path(__file__).parent
     lyrics_df = load_lyrics_table(base_path.join_path("/data/tables/lyrics_table.parquet"))
     song_df = load_song_table(base_path.join_path("/data/tables/song_table.parquet"), lyrics_df)
-    index_df = load_index_table(base_path.join_path("/data/tables/index_table.parquet", lyrics_df)
+    index_df = load_index_table(base_path.join_path("/data/tables/index_table.parquet"), lyrics_df)
 
     # cache embeddings
     lyrics_ids, lyrics_vectors = get_vectors(pinecone_index, lyrics_df.vector_id.unique().tolist())
