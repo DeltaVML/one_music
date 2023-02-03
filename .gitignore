@@ -7,5 +7,5 @@ src/config/*
 .idea/
 *__pycache__/
 *outputs/
-*data/
+*txt
 *.streamlit

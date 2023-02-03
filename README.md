@@ -1,32 +1,24 @@
-# TODO
-- understand how Spotify selects Top 50
-- summarize Spotify's article
-- filter unique song results
-- request error
+This project was realized by Thierry Jean in the context of the Cohere hackaton hosted by Lablab.ai from January 27 to February 3rd 2023. Learn more about the event and other projects [here](https://lablab.ai/event/cohere-hackathon).
+    
+ ### Product Next-steps
+ - Combine text and audio embedding to better represent the semantics of the song
 
-# Product vision and features
-- a web app
-- cluster songs by text content across languages
-- an artist might want to create songs that provide coverage over the semantic space
-
-# Notes
-- remove section headers for generative step
-
-# Story
-- research: https://research.atspotify.com/2022/07/the-contribution-of-lyrics-and-acoustics-to-collaborative-understanding-of-mood/
-
-# How it works
-## Data retrieval
-1. Poll the songs from all of the country "Top 50" playlists on Spotify (spotipy SDK)
-2. For each song:
-   1. retrieve some track features (audio features, genre) from Spotify (spotipy SDK)
-   2. retrieve lyrics from Genius.com (lyricsgenius SDK)
-   3. create an object combining lyrics + features
-   4. Embed and store object (Weaviate + Cohere)
-## Visualization / Exploration
-
-
-# Reference
-- Hypermodern Python projects: https://medium.com/@cjolowicz/hypermodern-python-d44485d9d769
-- Spotipy urllib3 manual fix
-- Lyricsgenius fix: https://github.com/johnwmillr/LyricsGenius/pull/215/commits/62e14d53d2978e76396556c61988986120e15022
+ ### Technical Challenges
+ - Handling multilingual text required proper encoding, parsing, and regex use to clean data
+ - 
+ ### Technical Next-steps
+ - Optimizing API calls to Spotify, Genius, Cohere and Pinecone with async routines and multiprocessing
+ - 
+ ### Data Model
+ ![Data model](https://github.com/zilto/one_music/blob/6b7c3afdb03ba075b21b5c1454422d492414afdb/docs/data_model_diagram.png)
+ ### Stack
+ Key technologies used for this project:
+ - [Cohere API](https://docs.cohere.ai/reference/about) via [cohere](https://github.com/cohere-ai/cohere-python)
+ - [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#/) via [spotipy](https://spotipy.readthedocs.io/en/2.22.1/#)
+ - [Genius API](https://docs.genius.com/) via [lyricsgenius](https://lyricsgenius.readthedocs.io/en/master/)
+ - [requests](https://requests.readthedocs.io/en/latest/) + [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) (webscraping)
+ - [Pinecone](https://www.pinecone.io/) (vector search engine)
+ - [SQLModel](https://sqlmodel.tiangolo.com/) (ORM)
+ - (TODO) Docker and docker-compose (self-hosted deployment)
+ - (TODO) AWS (cloud infra)    
+ - [Weaviate](https://weaviate.io/developers/weaviate) with [Cohere integration](https://weaviate.io/developers/weaviate/modules/retriever-vectorizer-modules/text2vec-cohere) (swapped for Pinecone)
