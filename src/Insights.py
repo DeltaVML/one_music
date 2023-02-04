@@ -69,8 +69,15 @@ def add_audio_embedding(song_df, features: list[str]):
     return embedding_df
 
 
-def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def filter_dataframe(df: pd.DataFrame, key) -> pd.DataFrame:
     """Nested filter function; used to filter audio_features"""
+    modify = st.checkbox("Add filters", key=key)
+
+    if not modify:
+        return df
+
+    df = df.copy()
+    
     df = df.copy()
 
     modification_container = st.container()
@@ -159,7 +166,7 @@ def app():
     )
     with st.expander("Multilingual lyrics embedding table"):
         if st.checkbox("Add filters", key="lyrics"):
-            st.dataframe(filter_dataframe(lyrics_df))
+            st.dataframe(filter_dataframe(lyrics_df, key="lyrics"))
         else:
             st.dataframe(lyrics_df)
 
@@ -182,7 +189,7 @@ def app():
     )
     with st.expander("Audio features embedding table"):
         if st.checkbox("Add filters", key="audio"):
-            st.dataframe(filter_dataframe(song_df))
+            st.dataframe(filter_dataframe(song_df, key="audio))
         else:
             st.dataframe(song_df)
 
