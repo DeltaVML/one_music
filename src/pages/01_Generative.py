@@ -78,6 +78,11 @@ def add_audio_embedding(song_df, features: list[str]):
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Nested filter function; used to filter audio_features"""
+    modify = st.checkbox("Add filters")
+
+    if not modify:
+        return df
+    
     df = df.copy()
 
     modification_container = st.container()
