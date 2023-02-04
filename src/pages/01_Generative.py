@@ -76,9 +76,9 @@ def add_audio_embedding(song_df, features: list[str]):
     return embedding_df
 
 
-def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def filter_dataframe(df: pd.DataFrame, key) -> pd.DataFrame:
     """Nested filter function; used to filter audio_features"""
-    modify = st.checkbox("Add filters")
+    modify = st.checkbox("Add filters", key=key)
 
     if not modify:
         return df
@@ -147,10 +147,7 @@ def app():
     st.title("🎶 OneMusic")
 
     st.subheader("Audio features embedding table")
-    if st.checkbox("Add filters", key="audio"):
-        st.dataframe(filter_dataframe(song_df))
-    else:
-        st.dataframe(song_df)
+    st.dataframe(filter_dataframe(song_df, key="page"))
 
     spotify_id_generate = st.text_input("Input Spotify id to Generate Lyrics", value="0yLdNVWF3Srea0uzk55zFn")
 
