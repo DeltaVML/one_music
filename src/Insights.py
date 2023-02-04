@@ -189,7 +189,7 @@ def app():
     )
     with st.expander("Audio features embedding table"):
         if st.checkbox("Add filters", key="audio"):
-            st.dataframe(filter_dataframe(song_df, key="audio))
+            st.dataframe(filter_dataframe(song_df, key="audio"))
         else:
             st.dataframe(song_df)
 
